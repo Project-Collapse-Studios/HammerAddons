@@ -109,7 +109,18 @@ def parse(map_path: Path, game_folder: Optional[str]='') -> Config:
     if not map_path.suffix:
         map_path /= 'unused'
 
-    for folder in map_path.parents:
+    available_paths: set[Path] = set()
+
+    # If game folder is passed, check it first
+    if game_folder:
+        game_path = Path(game_folder).absolute()
+
+        if game_path.exists():
+            available_paths.update([game_path] + list(game_path.parents))
+
+    available_paths.update(map_path.parents)
+
+    for folder in available_paths:
         conf_path = folder / CONF_NAME
         if conf_path.exists():
             LOGGER.info('Config path: "{}"', conf_path.absolute())
