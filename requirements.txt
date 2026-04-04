@@ -4,3 +4,6 @@ git+https://github.com/Project-Collapse-Studios/srctools.git
 trio >= 0.24.0
 pyinstaller >= 6.1.0
 versioningit >= 2.1.0
+pyglet >= 2.1.2
+pyperclip >= 1.9.0
+types-pyperclip >= 1.9.0

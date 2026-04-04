@@ -1,16 +1,15 @@
 """Creates the subset of assets needed for an input FGD to work.
 """
 from __future__ import annotations
+
 from pathlib import Path
 import argparse
-import sys
 import os
+import shutil
+import sys
 
-from srctools.fgd import (
-    FGD, AutoVisgroup, EntAttribute, EntityDef, EntityTypes, Helper, HelperExtAppliesTo,
-    HelperTypes, KVDef, Snippet, ValueTypes, match_tags, validate_tags,
-)
-from srctools.filesys import File, RawFileSystem
+from srctools.fgd import FGD
+from srctools.filesys import RawFileSystem, FileSystemChain
 from srctools.packlist import PackList
 
 
@@ -21,7 +20,7 @@ def action_build(input_path: Path, output_path: Path, asset_path: Path) -> None:
     asset_fsys = RawFileSystem(str(asset_path))
     fgd = FGD()
     fgd.parse_file(fgd_fsys, fgd_fsys[str(input_path)], eval_bases=False, eval_extensions=False, encoding='iso-8859-1')
-    pack = PackList(asset_fsys)
+    pack = PackList(FileSystemChain(asset_fsys))
 
     # Iterate over all entries, build a list of assets
     for classname in fgd.entities:
@@ -34,7 +33,7 @@ def action_build(input_path: Path, output_path: Path, asset_path: Path) -> None:
     pack.eval_dependencies()
 
     # Output all the files we can to our new output
-    for file in pack._files.values():
+    for file in pack:
         try:
             sys_file = asset_fsys[file.filename]
         except FileNotFoundError:
@@ -42,12 +41,11 @@ def action_build(input_path: Path, output_path: Path, asset_path: Path) -> None:
             continue
 
         print(file.filename)
-        with sys_file.open_bin() as f:
-            data = f.read()
+        with sys_file.open_bin() as fsrc:
             new_path = Path(os.path.join(str(output_path), file.filename))
             new_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(new_path, "wb") as out:
-                out.write(data)
+            with open(new_path, "wb") as fdest:
+                shutil.copyfileobj(fsrc, fdest)
 
 
 def main(args: list[str] | None = None) -> None:
@@ -80,6 +78,7 @@ def main(args: list[str] | None = None) -> None:
     asset_path = Path(result.assets).resolve()
 
     action_build(input_path, output_path, asset_path)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
